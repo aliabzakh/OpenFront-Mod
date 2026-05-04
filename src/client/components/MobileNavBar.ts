@@ -114,6 +114,12 @@ export class MobileNavBar extends LitElement {
           data-page="page-leaderboard"
           data-i18n="main.leaderboard"
         ></button>
+        <a
+          href="https://open-front-mod.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="block w-full text-left font-bold uppercase tracking-[0.05em] text-white/70 transition-all duration-200 hover:text-blue-600 hover:translate-x-2.5 hover:drop-shadow-[0_0_20px_rgba(37,99,235,0.5)] text-[clamp(18px,2.8vh,32px)] py-[clamp(0.2rem,0.8vh,0.75rem)] no-underline"
+        >🏆 Friend Leaderboard</a>
         <div
           class="no-crazygames nav-menu-item flex items-center w-full cursor-pointer"
           data-page="page-item-store"

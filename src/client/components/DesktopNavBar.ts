@@ -123,6 +123,12 @@ export class DesktopNavBar extends LitElement {
           data-page="page-leaderboard"
           data-i18n="main.leaderboard"
         ></button>
+        <a
+          href="https://open-front-mod.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-white/70 hover:text-[#0073b7] font-medium tracking-wider uppercase cursor-pointer transition-colors no-underline"
+        >🏆 Friend Leaderboard</a>
         <div class="relative">
           <button
             class="nav-menu-item text-white/70 hover:text-[#0073b7]  font-medium tracking-wider uppercase cursor-pointer transition-colors [&.active]:text-[#0073b7] "
