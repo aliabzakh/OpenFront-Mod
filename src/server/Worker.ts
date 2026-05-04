@@ -28,6 +28,7 @@ import { logger } from "./Logger";
 import { GameEnv } from "../core/configuration/Config";
 import { MapPlaylist } from "./MapPlaylist";
 import { setNoStoreHeaders } from "./NoStoreHeaders";
+import { renderAppShell } from "./RenderHtml";
 import { startPolling } from "./PollingLoop";
 import { PrivilegeRefresher } from "./PrivilegeRefresher";
 import { applyStaticAssetCacheControl } from "./StaticAssetCache";
@@ -110,7 +111,7 @@ export async function startWorker() {
   app.use(express.json());
 
   app.use(
-    express.static(path.join(__dirname, "../../out"), {
+    express.static(path.join(__dirname, "../../static"), {
       setHeaders: (res) => {
         applyStaticAssetCacheControl(
           res.setHeader.bind(res),
@@ -537,6 +538,17 @@ export async function startWorker() {
     // Signal to the master process that this worker is ready
     lobbyService.sendReady(workerId);
     log.info(`signaled ready state to master`);
+  });
+
+  // SPA fallback — serves index.html for lobby share links like /wN/game/:id?lobby
+  app.get("/{*splat}", async (_req, res) => {
+    try {
+      const htmlPath = path.join(__dirname, "../../static/index.html");
+      await renderAppShell(res, htmlPath);
+    } catch (error) {
+      log.error("Error rendering SPA fallback:", error);
+      res.status(500).send("Internal Server Error");
+    }
   });
 
   // Global error handler
