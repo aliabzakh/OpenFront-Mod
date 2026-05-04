@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenFront Leaderboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #efefef;
+      color: #1a1a1a;
+      padding: 28px 16px 48px;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 { font-size: 26px; font-weight: 700; }
+    header p  { font-size: 13px; color: #777; margin-top: 4px; }
+
+    .card {
+      background: white;
+      border-radius: 6px;
+      padding: 22px 24px;
+      margin-bottom: 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card h2 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #444;
+      border-bottom: 2px solid #222;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+    }
+
+    /* ── Tables ─────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    th {
+      text-align: left;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border-bottom: 1px solid #ddd;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #f2f2f2;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Rank badges ─────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .rank-1 .badge { background: #FFD700; color: #333; }
+    .rank-2 .badge { background: #C0C0C0; color: #333; }
+    .rank-3 .badge { background: #CD7F32; color: white; }
+    .rank-x .badge { background: #e8e8e8; color: #666; }
+
+    /* ── Score cells ─────────────────────────────────────────── */
+    .mono { font-family: 'Consolas', monospace; font-size: 13px; }
+    .name { font-weight: 600; }
+    .green { color: #1d6f1d; font-weight: 600; }
+    .red   { color: #a02020; }
+    .muted { color: #aaa; }
+
+    /* ── Game blocks ─────────────────────────────────────────── */
+    .game-block { margin-bottom: 28px; }
+    .game-block:last-child { margin-bottom: 0; }
+
+    .game-header {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .game-title { font-size: 15px; font-weight: 700; }
+
+    .game-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: #888;
+      flex-wrap: wrap;
+    }
+
+    .game-meta a { color: #3a7be0; text-decoration: none; }
+    .game-meta a:hover { text-decoration: underline; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #ebebeb;
+      margin: 22px 0;
+    }
+
+    /* ── Formula note ────────────────────────────────────────── */
+    .note {
+      font-size: 12px;
+      color: #999;
+      margin-top: 14px;
+      line-height: 1.7;
+    }
+
+    .note strong { color: #666; }
+
+    /* ── Misc ────────────────────────────────────────────────── */
+    .no-data {
+      text-align: center;
+      color: #bbb;
+      padding: 28px;
+      font-size: 13px;
+    }
+
+    .footer-link {
+      text-align: center;
+      font-size: 12px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .footer-link a { color: #bbb; text-decoration: none; }
+    .footer-link a:hover { color: #666; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🗺️ OpenFront Leaderboard</h1>
+    <p>Score = finish position ÷ players · Lower is better · Larger games count more</p>
+  </header>
+
+  <!-- ── Overall Rankings ──────────────────────────────────── -->
+  <div class="card">
+    <h2>Overall Rankings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Games</th>
+          <th>Avg Score</th>
+          <th>Best Finish</th>
+          <th>Wins</th>
+        </tr>
+      </thead>
+      <tbody id="overall-body">
+        <tr><td colspan="6" class="no-data">Loading…</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>Score = finish position ÷ number of players.</strong>
+      Lower is better. A win in a 7-player game scores 1/7 ≈ 0.143,
+      which outranks a win in a 3-player game (1/3 ≈ 0.333).
+      Overall rank is determined by average score across all games played.
+    </div>
+  </div>
+
+  <!-- ── Game History ───────────────────────────────────────── -->
+  <div class="card">
+    <h2>Game History</h2>
+    <div id="games-container">
+      <div class="no-data">Loading…</div>
+    </div>
+  </div>
+
+  <div class="footer-link"><a href="admin.html">Admin panel →</a></div>
+
+  <script>
+    // ── CONFIG — replace with your Supabase project values ────────────────
+    const SUPABASE_URL      = 'https://uzmrfrtmxncgtqtsbrvk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6bXJmcnRteG5jZ3RxdHNicnZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDkzNTgsImV4cCI6MjA5MzQyNTM1OH0.IHber4xs05b6MNCGy-5wEeR7xv0-xqasuSs4sYRc8kc';
+    // ──────────────────────────────────────────────────────────────────────
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadAll() {
+      const [{ data: players }, { data: games }, { data: results }] = await Promise.all([
+        db.from('players').select('*').order('name'),
+        db.from('games').select('*').order('played_date', { ascending: true }),
+        db.from('results').select('*'),
+      ]);
+      return { players: players ?? [], games: games ?? [], results: results ?? [] };
+    }
+
+    function score(pos, total) { return pos / total; }
+
+    function fmtScore(s) {
+      // Show up to 3 decimal places, trim trailing zeros
+      return parseFloat(s.toFixed(3)).toString();
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtDate(iso) {
+      return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
+        month: 'numeric', day: 'numeric', year: 'numeric',
+      });
+    }
+
+    // ── Overall Rankings ─────────────────────────────────────────────────
+    function renderOverall(players, games, results) {
+      const stats = players.map(player => {
+        const playerResults = results
+          .filter(r => r.player_id === player.id)
+          .map(r => ({ ...r, game: games.find(g => g.id === r.game_id) }))
+          .filter(r => r.game);
+
+        if (playerResults.length === 0) return null;
+
+        const scores = playerResults.map(r => score(r.finish_position, r.game.num_players));
+        const avg    = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const minScore = Math.min(...scores);
+        const best   = playerResults.find(r => score(r.finish_position, r.game.num_players) === minScore);
+        const wins   = playerResults.filter(r => r.finish_position === 1).length;
+
+        return {
+          player,
+          count:    playerResults.length,
+          avg,
+          bestFrac: best ? `${best.finish_position}/${best.game.num_players}` : '-',
+          bestScore: minScore,
+          wins,
+        };
+      }).filter(Boolean);
+
+      stats.sort((a, b) => a.avg - b.avg);
+
+      const tbody = document.getElementById('overall-body');
+
+      if (stats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="no-data">No games recorded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = stats.map((s, i) => {
+        const rankClass = ['rank-1', 'rank-2', 'rank-3'][i] ?? 'rank-x';
+        return `
+          <tr class="${rankClass}">
+            <td><span class="badge">${i + 1}</span></td>
+            <td class="name">${escHtml(s.player.name)}</td>
+            <td>${s.count}</td>
+            <td class="mono">${fmtScore(s.avg)}</td>
+            <td class="mono ${s.bestScore < 0.25 ? 'green' : ''}">
+              ${escHtml(s.bestFrac)} = ${fmtScore(s.bestScore)}
+            </td>
+            <td>${s.wins > 0 ? `<span class="green">${s.wins}</span>` : `<span class="muted">0</span>`}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ── Game History ─────────────────────────────────────────────────────
+    function renderHistory(players, games, results) {
+      const container = document.getElementById('games-container');
+
+      if (games.length === 0) {
+        container.innerHTML = '<div class="no-data">No games recorded yet.</div>';
+        return;
+      }
+
+      const sorted = [...games].sort((a, b) => b.played_date.localeCompare(a.played_date));
+
+      container.innerHTML = sorted.map((game, idx) => {
+        const gameResults = results
+          .filter(r => r.game_id === game.id)
+          .sort((a, b) => a.finish_position - b.finish_position);
+
+        const replay = game.replay_url
+          ? `<a href="${escHtml(game.replay_url)}" target="_blank" rel="noopener">Replay ↗</a>`
+          : '';
+
+        const rows = gameResults.map(r => {
+          const player  = players.find(p => p.id === r.player_id);
+          if (!player) return '';
+          const s       = score(r.finish_position, game.num_players);
+          const isFirst = r.finish_position === 1;
+          const isLast  = r.finish_position === game.num_players;
+          const cls     = isFirst ? 'green' : isLast ? 'red' : '';
+          return `
+            <tr>
+              <td class="name">${escHtml(player.name)}</td>
+              <td class="mono ${cls}">
+                ${r.finish_position} / ${game.num_players}
+                <span style="color:#bbb;margin:0 4px;">=</span>
+                ${fmtScore(s)}
+              </td>
+            </tr>`;
+        }).join('');
+
+        const divider = idx < sorted.length - 1 ? '<hr class="divider">' : '';
+
+        return `
+          <div class="game-block">
+            <div class="game-header">
+              <span class="game-title">Game ${game.game_number}</span>
+              <div class="game-meta">
+                <span>${escHtml(game.map_name)}</span>
+                <span>${fmtDate(game.played_date)}</span>
+                <span>${game.num_players} players</span>
+                ${replay}
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Finish (position / total = score)</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>${divider}`;
+      }).join('');
+    }
+
+    // ── Bootstrap ────────────────────────────────────────────────────────
+    (async () => {
+      try {
+        const { players, games, results } = await loadAll();
+        renderOverall(players, games, results);
+        renderHistory(players, games, results);
+      } catch (e) {
+        console.error(e);
+        document.getElementById('overall-body').innerHTML =
+          '<tr><td colspan="6" class="no-data">Error loading data — check the console and verify your Supabase config.</td></tr>';
+        document.getElementById('games-container').innerHTML =
+          '<div class="no-data">Error loading data.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

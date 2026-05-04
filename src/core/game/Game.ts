@@ -3,6 +3,7 @@ import { AbstractGraph } from "../pathfinding/algorithms/AbstractGraph";
 import { PathFinder } from "../pathfinding/types";
 import { AllPlayersStats, ClientID } from "../Schemas";
 import { formatPlayerDisplayName } from "../Util";
+import { EmpireGameData } from "./EmpireStats";
 import { GameMap, TileRef } from "./GameMap";
 import {
   GameUpdate,
@@ -852,7 +853,7 @@ export interface Game extends GameMap {
   drainPackedTileUpdates(): Uint32Array;
   recordMotionPlan(record: MotionPlanRecord): void;
   drainPackedMotionPlans(): Uint32Array | null;
-  setWinner(winner: Player | Team, allPlayersStats: AllPlayersStats): void;
+  setWinner(winner: Player | Team, allPlayersStats: AllPlayersStats, empireData?: EmpireGameData): void;
   getWinner(): Player | Team | null;
   config(): Config;
   isPaused(): boolean;

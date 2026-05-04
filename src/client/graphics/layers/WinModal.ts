@@ -7,6 +7,7 @@ import {
   TUTORIAL_VIDEO_URL,
 } from "../../../client/Utils";
 import { EventBus } from "../../../core/EventBus";
+import { EmpireGameData } from "../../../core/game/EmpireStats";
 import { RankedType } from "../../../core/game/Game";
 import { GameUpdateType } from "../../../core/game/GameUpdates";
 import { GameView } from "../../../core/game/GameView";
@@ -20,6 +21,7 @@ import {
 import { crazyGamesSDK } from "../../CrazyGamesSDK";
 import { Platform } from "../../Platform";
 import { SendWinnerEvent } from "../../Transport";
+import { ShowEmpireStatsEvent } from "./EmpireStatsModal";
 import { Layer } from "./Layer";
 
 @customElement("win-modal")
@@ -43,6 +45,9 @@ export class WinModal extends LitElement implements Layer {
 
   @state()
   private patternContent: TemplateResult | null = null;
+
+  @state()
+  private empireData: EmpireGameData | null = null;
 
   private _title: string;
 
@@ -70,7 +75,7 @@ export class WinModal extends LitElement implements Layer {
         ${this.innerHtml()}
         <div
           class="${this.showButtons
-            ? "flex justify-between gap-2.5"
+            ? "flex justify-between gap-2.5 flex-wrap"
             : "hidden"}"
         >
           <button
@@ -86,6 +91,16 @@ export class WinModal extends LitElement implements Layer {
                   class="flex-1 px-3 py-3 text-base cursor-pointer bg-purple-600 text-white border-0 rounded-sm transition-all duration-200 hover:bg-purple-500 hover:-translate-y-px active:translate-y-px"
                 >
                   ${translateText("win_modal.requeue")}
+                </button>
+              `
+            : null}
+          ${this.empireData !== null
+            ? html`
+                <button
+                  @click=${this._handleEmpireStats}
+                  class="flex-1 px-3 py-3 text-base cursor-pointer bg-yellow-600 text-white border-0 rounded-sm transition-all duration-200 hover:bg-yellow-500 hover:-translate-y-px active:translate-y-px font-semibold"
+                >
+                  🏆 Empire Stats
                 </button>
               `
             : null}
@@ -240,6 +255,12 @@ export class WinModal extends LitElement implements Layer {
     this.requestUpdate();
   }
 
+  private _handleEmpireStats() {
+    if (this.empireData !== null) {
+      this.eventBus.emit(new ShowEmpireStatsEvent(this.empireData));
+    }
+  }
+
   private _handleExit() {
     this.hide();
     window.location.href = "/";
@@ -269,6 +290,11 @@ export class WinModal extends LitElement implements Layer {
     const updates = this.game.updatesSinceLastTick();
     const winUpdates = updates !== null ? updates[GameUpdateType.Win] : [];
     winUpdates.forEach((wu) => {
+      // Store empire data so the "Empire Stats" button can show it
+      if (wu.empireData !== undefined) {
+        this.empireData = wu.empireData;
+      }
+
       if (wu.winner === undefined) {
         // ...
       } else if (wu.winner[0] === "team") {

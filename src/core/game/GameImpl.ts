@@ -3,6 +3,7 @@ import { Config } from "../configuration/Config";
 import { AbstractGraph } from "../pathfinding/algorithms/AbstractGraph";
 import { PathFinder } from "../pathfinding/types";
 import { AllPlayersStats, ClientID, Winner } from "../Schemas";
+import { EmpireGameData } from "./EmpireStats";
 import { ATTACK_INDEX_SENT } from "../StatsSchemas";
 import { simpleHash } from "../Util";
 import { AllianceImpl } from "./AllianceImpl";
@@ -831,12 +832,13 @@ export class GameImpl implements Game {
     });
   }
 
-  setWinner(winner: Player | Team, allPlayersStats: AllPlayersStats): void {
+  setWinner(winner: Player | Team, allPlayersStats: AllPlayersStats, empireData?: EmpireGameData): void {
     this._winner = winner;
     this.addUpdate({
       type: GameUpdateType.Win,
       winner: this.makeWinner(winner),
       allPlayersStats,
+      empireData,
     });
   }
 

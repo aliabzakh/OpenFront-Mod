@@ -45,6 +45,7 @@ import { TerritoryLayer } from "./layers/TerritoryLayer";
 import { UILayer } from "./layers/UILayer";
 import { UnitDisplay } from "./layers/UnitDisplay";
 import { UnitLayer } from "./layers/UnitLayer";
+import { EmpireStatsModal } from "./layers/EmpireStatsModal";
 import { WinModal } from "./layers/WinModal";
 
 export function createRenderer(
@@ -161,6 +162,14 @@ export function createRenderer(
   }
   winModal.eventBus = eventBus;
   winModal.game = game;
+
+  const empireStatsModal = document.querySelector(
+    "empire-stats-modal",
+  ) as EmpireStatsModal;
+  if (!(empireStatsModal instanceof EmpireStatsModal)) {
+    console.error("empire stats modal not found");
+  }
+  empireStatsModal.eventBus = eventBus;
 
   const replayPanel = document.querySelector("replay-panel") as ReplayPanel;
   if (!(replayPanel instanceof ReplayPanel)) {
@@ -308,6 +317,7 @@ export function createRenderer(
     controlPanel,
     playerInfo,
     winModal,
+    empireStatsModal,
     replayPanel,
     settingsModal,
     teamStats,

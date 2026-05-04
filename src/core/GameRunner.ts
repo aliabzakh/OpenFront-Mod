@@ -1,6 +1,7 @@
 import { placeName } from "../client/graphics/NameBoxCalculator";
 import { getGameLogicConfig } from "./configuration/ConfigLoader";
 import { Executor } from "./execution/ExecutionManager";
+import { EmpireTrackerExecution } from "./execution/EmpireTrackerExecution";
 import { RecomputeRailClusterExecution } from "./execution/RecomputeRailClusterExecution";
 import { WinCheckExecution } from "./execution/WinCheckExecution";
 import {
@@ -104,7 +105,9 @@ export class GameRunner {
     if (this.game.config().spawnNations()) {
       this.game.addExecution(...this.execManager.nationExecutions());
     }
-    this.game.addExecution(new WinCheckExecution());
+    const empireTracker = new EmpireTrackerExecution();
+    this.game.addExecution(empireTracker);
+    this.game.addExecution(new WinCheckExecution(empireTracker));
     if (!this.game.config().isUnitDisabled(UnitType.Factory)) {
       this.game.addExecution(
         new RecomputeRailClusterExecution(this.game.railNetwork()),

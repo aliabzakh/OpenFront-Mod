@@ -1,3 +1,4 @@
+import { EmpireGameData } from "./EmpireStats";
 import { AllPlayersStats, ClientID, Winner } from "../Schemas";
 import {
   EmojiMessage,
@@ -264,6 +265,8 @@ export interface WinUpdate {
   type: GameUpdateType.Win;
   allPlayersStats: AllPlayersStats;
   winner: Winner;
+  /** Empire ranking data produced by EmpireTrackerExecution. */
+  empireData?: EmpireGameData;
 }
 
 export interface HashUpdate {

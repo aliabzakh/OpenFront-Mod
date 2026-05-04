@@ -9,6 +9,7 @@ import {
   RankedType,
   Team,
 } from "../game/Game";
+import { EmpireTrackerExecution } from "./EmpireTrackerExecution";
 
 export class WinEvent implements GameEvent {
   constructor(public readonly winner: Player) {}
@@ -23,7 +24,7 @@ export class WinCheckExecution implements Execution {
   // maxGameDuration hard kill. 170mins (10 mins before 3hrs)
   private static readonly HARD_TIME_LIMIT_SECONDS = 170 * 60;
 
-  constructor() {}
+  constructor(private readonly empireTracker?: EmpireTrackerExecution) {}
 
   init(mg: Game, ticks: number) {
     this.mg = mg;
@@ -56,7 +57,7 @@ export class WinCheckExecution implements Execution {
         (p) => p.type() === PlayerType.Human && !p.isDisconnected(),
       );
       if (humans.length === 1) {
-        this.mg.setWinner(humans[0], this.mg.stats().stats());
+        this.mg.setWinner(humans[0], this.mg.stats().stats(), this.empireTracker?.computeEmpireData());
         console.log(`${humans[0].name()} has won the game`);
         this.active = false;
         return;
@@ -75,7 +76,7 @@ export class WinCheckExecution implements Execution {
         timeElapsed - this.mg.config().gameConfig().maxTimerValue! * 60 >= 0) ||
       timeElapsed >= WinCheckExecution.HARD_TIME_LIMIT_SECONDS
     ) {
-      this.mg.setWinner(max, this.mg.stats().stats());
+      this.mg.setWinner(max, this.mg.stats().stats(), this.empireTracker?.computeEmpireData());
       console.log(`${max.name()} has won the game`);
       this.active = false;
     }
@@ -112,7 +113,7 @@ export class WinCheckExecution implements Execution {
       timeElapsed >= WinCheckExecution.HARD_TIME_LIMIT_SECONDS
     ) {
       if (max[0] === ColoredTeams.Bot) return;
-      this.mg.setWinner(max[0], this.mg.stats().stats());
+      this.mg.setWinner(max[0], this.mg.stats().stats(), this.empireTracker?.computeEmpireData());
       console.log(`${max[0]} has won the game`);
       this.active = false;
     }
