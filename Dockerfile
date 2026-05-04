@@ -74,6 +74,9 @@ ENV GIT_COMMIT="$GIT_COMMIT"
 
 RUN <<'EOF' tee /usr/local/bin/start.sh
 #!/bin/sh
+# Remove the default nginx site that conflicts with our config
+rm -f /etc/nginx/sites-enabled/default
+
 # Railway injects PORT; nginx must listen on it. Node server stays on 3000 internally.
 NGINX_PORT=${PORT:-80}
 sed -i "s/listen 80 default_server/listen ${NGINX_PORT} default_server/" /etc/nginx/conf.d/default.conf

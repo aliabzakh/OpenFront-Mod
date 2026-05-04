@@ -3,7 +3,8 @@ import { DefaultServerConfig } from "./DefaultConfig";
 
 export const prodConfig = new (class extends DefaultServerConfig {
   numWorkers(): number {
-    return 20;
+    const n = parseInt(process.env.NUM_WORKERS ?? "20", 10);
+    return Number.isFinite(n) && n >= 1 ? n : 20;
   }
   env(): GameEnv {
     return GameEnv.Prod;
