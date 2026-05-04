@@ -18,6 +18,7 @@ declare global {
   interface Window {
     BOOTSTRAP_CONFIG?: {
       gameEnv?: string;
+      numWorkers?: number;
     };
   }
 }
