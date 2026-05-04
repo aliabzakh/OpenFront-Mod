@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — OpenFront Leaderboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #efefef;
+      color: #1a1a1a;
+      padding: 28px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 { font-size: 22px; font-weight: 700; }
+    header p  { font-size: 13px; color: #777; margin-top: 4px; }
+
+    .card {
+      background: white;
+      border-radius: 6px;
+      padding: 22px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card h2 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #444;
+      border-bottom: 2px solid #222;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+
+    label:first-of-type { margin-top: 0; }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="url"],
+    input[type="number"],
+    input[type="password"] {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: #3a7be0; }
+    input:disabled { background: #f9f9f9; color: #bbb; }
+
+    button {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-primary { background: #222; color: white; }
+    .btn-primary:hover { background: #444; }
+    .btn-danger { background: #c0392b; color: white; }
+    .btn-danger:hover { background: #e74c3c; }
+    .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+    .mt { margin-top: 14px; }
+
+    /* ── Player result rows ──────────────────────────────────── */
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .result-row:last-child { border-bottom: none; }
+
+    .result-row .pos-input { width: 68px; }
+
+    .result-row .player-label {
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chk { width: 16px; height: 16px; cursor: pointer; }
+
+    /* ── Status messages ─────────────────────────────────────── */
+    .status {
+      font-size: 13px;
+      padding: 9px 12px;
+      border-radius: 4px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .status.ok  { background: #e8f5e9; color: #2e7d32; display: block; }
+    .status.err { background: #ffebee; color: #c62828; display: block; }
+
+    /* ── Game list ───────────────────────────────────────────── */
+    .game-entry {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f2f2f2;
+    }
+
+    .game-entry:last-child { border-bottom: none; }
+
+    .game-entry-info { font-size: 14px; }
+    .game-entry-info .sub { font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    /* ── Player tags ─────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      background: #f0f0f0;
+      border-radius: 3px;
+      padding: 2px 8px;
+      font-size: 13px;
+      margin: 3px 3px 0 0;
+    }
+
+    /* ── Gate / main toggle ──────────────────────────────────── */
+    #main { display: none; }
+
+    .note { font-size: 12px; color: #999; margin-bottom: 12px; line-height: 1.6; }
+
+    .footer-link {
+      text-align: center;
+      font-size: 12px;
+      max-width: 680px;
+      margin: 8px auto 0;
+    }
+
+    .footer-link a { color: #bbb; text-decoration: none; }
+    .footer-link a:hover { color: #555; }
+
+    .two-col { display: flex; gap: 14px; }
+    .two-col > * { flex: 1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🗺️ Admin Panel</h1>
+    <p>Record game results and manage players</p>
+  </header>
+
+  <!-- ── Password gate ─────────────────────────────────────── -->
+  <div class="card" id="gate">
+    <h2>Admin Access</h2>
+    <label>Password</label>
+    <input type="password" id="pw-input" placeholder="Enter admin password" />
+    <button class="btn-primary mt" id="pw-btn">Enter</button>
+    <div class="status" id="pw-status"></div>
+  </div>
+
+  <!-- ── Main admin UI ─────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- Add player -->
+    <div class="card">
+      <h2>Players</h2>
+      <p class="note">Add all friends who will participate across games. Players persist between games.</p>
+      <div class="two-col">
+        <div>
+          <label>Name</label>
+          <input type="text" id="new-player" placeholder="e.g. Zain" />
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn-primary" style="width:100%;" id="add-player-btn">Add Player</button>
+        </div>
+      </div>
+      <div class="status" id="player-status"></div>
+      <div id="player-tags" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Record game -->
+    <div class="card">
+      <h2>Record Game Result</h2>
+      <div class="two-col">
+        <div>
+          <label>Map</label>
+          <input type="text" id="game-map" placeholder="e.g. Manicouagan" />
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="game-date" />
+        </div>
+      </div>
+      <label>Replay URL <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+      <input type="url" id="game-replay" placeholder="https://openfront.io/?replay=…" />
+
+      <label style="margin-top:18px;">Player Results</label>
+      <p class="note">Check each player who participated, then enter their finish position (1 = winner). Positions must be consecutive with no gaps.</p>
+      <div id="result-rows"></div>
+
+      <button class="btn-primary mt" id="submit-game-btn">Save Game</button>
+      <div class="status" id="game-status"></div>
+    </div>
+
+    <!-- Game list -->
+    <div class="card">
+      <h2>Recorded Games</h2>
+      <div id="game-list"><em style="color:#aaa;font-size:13px;">Loading…</em></div>
+    </div>
+
+  </div>
+
+  <div class="footer-link"><a href="index.html">← Back to leaderboard</a></div>
+
+  <script>
+    // ── CONFIG — replace with your Supabase project values ────────────────
+    const SUPABASE_URL      = 'https://uzmrfrtmxncgtqtsbrvk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6bXJmcnRteG5jZ3RxdHNicnZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NDkzNTgsImV4cCI6MjA5MzQyNTM1OH0.IHber4xs05b6MNCGy-5wEeR7xv0-xqasuSs4sYRc8kc';
+    const ADMIN_PASSWORD    = 'openfront2024'; // ← change this before deploying
+    // ──────────────────────────────────────────────────────────────────────
+
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let players = [];
+    let games   = [];
+    let results = [];
+
+    // ── Auth gate ────────────────────────────────────────────────────────
+    function checkPw() {
+      if (document.getElementById('pw-input').value === ADMIN_PASSWORD) {
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('main').style.display = 'block';
+        loadAll();
+      } else {
+        showStatus('pw-status', 'Incorrect password.', 'err');
+      }
+    }
+
+    document.getElementById('pw-btn').onclick = checkPw;
+    document.getElementById('pw-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkPw();
+    });
+
+    // ── Data loading ─────────────────────────────────────────────────────
+    async function loadAll() {
+      const [{ data: p }, { data: g }, { data: r }] = await Promise.all([
+        db.from('players').select('*').order('name'),
+        db.from('games').select('*').order('played_date', { ascending: false }),
+        db.from('results').select('*'),
+      ]);
+      players = p ?? [];
+      games   = g ?? [];
+      results = r ?? [];
+
+      renderPlayerTags();
+      renderResultRows();
+      renderGameList();
+
+      // Default date to today
+      const today = new Date().toISOString().slice(0, 10);
+      const dateInput = document.getElementById('game-date');
+      if (!dateInput.value) dateInput.value = today;
+    }
+
+    // ── Players ──────────────────────────────────────────────────────────
+    function renderPlayerTags() {
+      const el = document.getElementById('player-tags');
+      el.innerHTML = players.length === 0
+        ? '<em style="color:#aaa;font-size:13px;">No players yet.</em>'
+        : players.map(p => `<span class="tag">${escHtml(p.name)}</span>`).join('');
+    }
+
+    document.getElementById('add-player-btn').onclick = async () => {
+      const input = document.getElementById('new-player');
+      const name  = input.value.trim();
+      if (!name) return;
+
+      const { error } = await db.from('players').insert({ name });
+      if (error) {
+        showStatus('player-status', error.code === '23505'
+          ? `"${name}" already exists.`
+          : error.message, 'err');
+        return;
+      }
+
+      showStatus('player-status', `"${name}" added.`, 'ok');
+      input.value = '';
+      await loadAll();
+    };
+
+    document.getElementById('new-player').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('add-player-btn').click();
+    });
+
+    // ── Result rows ──────────────────────────────────────────────────────
+    function renderResultRows() {
+      const container = document.getElementById('result-rows');
+      if (players.length === 0) {
+        container.innerHTML = '<em style="color:#aaa;font-size:13px;">Add players first.</em>';
+        return;
+      }
+
+      container.innerHTML = players.map(p => `
+        <div class="result-row">
+          <input type="checkbox" class="chk" id="chk-${p.id}" data-pid="${p.id}" />
+          <label class="player-label" for="chk-${p.id}">${escHtml(p.name)}</label>
+          <input
+            type="number"
+            class="pos-input"
+            id="pos-${p.id}"
+            data-pid="${p.id}"
+            min="1" max="20"
+            placeholder="Pos"
+            disabled
+          />
+        </div>
+      `).join('');
+
+      // Toggle position input with checkbox
+      container.querySelectorAll('.chk').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const pos = document.getElementById('pos-' + chk.dataset.pid);
+          pos.disabled = !chk.checked;
+          if (!chk.checked) pos.value = '';
+        });
+      });
+    }
+
+    // ── Submit game ───────────────────────────────────────────────────────
+    document.getElementById('submit-game-btn').onclick = async () => {
+      const mapName   = document.getElementById('game-map').value.trim();
+      const dateVal   = document.getElementById('game-date').value;
+      const replayUrl = document.getElementById('game-replay').value.trim();
+
+      if (!mapName || !dateVal) {
+        showStatus('game-status', 'Map name and date are required.', 'err');
+        return;
+      }
+
+      // Gather checked players + positions
+      const participants = [];
+      document.querySelectorAll('.chk:checked').forEach(chk => {
+        const pid = chk.dataset.pid;
+        const pos = parseInt(document.getElementById('pos-' + pid).value, 10);
+        participants.push({ player_id: pid, finish_position: pos });
+      });
+
+      if (participants.length < 2) {
+        showStatus('game-status', 'Select at least 2 players.', 'err');
+        return;
+      }
+
+      // Validate consecutive positions 1…n
+      const positions = participants.map(p => p.finish_position).sort((a, b) => a - b);
+      const valid = positions.every((pos, i) => Number.isInteger(pos) && pos === i + 1);
+      if (!valid) {
+        showStatus('game-status',
+          `Positions must be 1 through ${participants.length} with no gaps or duplicates. Got: ${positions.join(', ')}.`,
+          'err');
+        return;
+      }
+
+      const numPlayers  = participants.length;
+      const gameNumber  = games.length > 0
+        ? Math.max(...games.map(g => g.game_number)) + 1
+        : 1;
+
+      // Insert game
+      const { data: gameData, error: gameErr } = await db
+        .from('games')
+        .insert({
+          game_number: gameNumber,
+          map_name:    mapName,
+          played_date: dateVal,
+          replay_url:  replayUrl || null,
+          num_players: numPlayers,
+        })
+        .select()
+        .single();
+
+      if (gameErr) { showStatus('game-status', gameErr.message, 'err'); return; }
+
+      // Insert results
+      const { error: resErr } = await db.from('results').insert(
+        participants.map(p => ({
+          game_id:         gameData.id,
+          player_id:       p.player_id,
+          finish_position: p.finish_position,
+        }))
+      );
+
+      if (resErr) {
+        await db.from('games').delete().eq('id', gameData.id); // rollback
+        showStatus('game-status', resErr.message, 'err');
+        return;
+      }
+
+      showStatus('game-status', `Game ${gameNumber} saved!`, 'ok');
+
+      // Reset form
+      document.getElementById('game-map').value    = '';
+      document.getElementById('game-replay').value = '';
+      document.querySelectorAll('.chk').forEach(c => { c.checked = false; });
+      document.querySelectorAll('.pos-input').forEach(i => { i.value = ''; i.disabled = true; });
+
+      await loadAll();
+    };
+
+    // ── Game list ─────────────────────────────────────────────────────────
+    function renderGameList() {
+      const el = document.getElementById('game-list');
+      if (games.length === 0) {
+        el.innerHTML = '<em style="color:#aaa;font-size:13px;">No games yet.</em>';
+        return;
+      }
+
+      el.innerHTML = games.map(g => {
+        const date = new Date(g.played_date + 'T00:00:00').toLocaleDateString('en-US', {
+          month: 'numeric', day: 'numeric', year: 'numeric',
+        });
+
+        const finishers = results
+          .filter(r => r.game_id === g.id)
+          .sort((a, b) => a.finish_position - b.finish_position)
+          .map(r => {
+            const pl = players.find(p => p.id === r.player_id);
+            return pl ? `${r.finish_position}. ${pl.name}` : '';
+          }).filter(Boolean).join(' · ');
+
+        return `
+          <div class="game-entry">
+            <div class="game-entry-info">
+              <strong>Game ${g.game_number}</strong>
+              <span style="color:#aaa;margin-left:8px;font-size:13px;">${escHtml(g.map_name)} · ${date} · ${g.num_players} players</span>
+              <div class="sub">${escHtml(finishers)}</div>
+            </div>
+            <button class="btn-danger btn-sm" data-id="${g.id}" data-num="${g.game_number}">Delete</button>
+          </div>`;
+      }).join('');
+
+      el.querySelectorAll('.btn-danger').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm(`Delete Game ${btn.dataset.num}? This cannot be undone.`)) return;
+          const { error } = await db.from('games').delete().eq('id', btn.dataset.id);
+          if (error) { alert('Error: ' + error.message); return; }
+          await loadAll();
+        };
+      });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function showStatus(id, msg, type) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.className   = 'status ' + type;
+      setTimeout(() => { el.className = 'status'; }, 5000);
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
