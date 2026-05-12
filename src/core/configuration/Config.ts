@@ -45,6 +45,9 @@ export interface ServerConfig {
   jwtAudience(): string;
   jwtIssuer(): string;
   jwkPublicKey(): Promise<JWK>;
+  // If true, plain persistent-ID tokens (UUID) are accepted without a signed JWT.
+  // Safe to enable on self-hosted deployments that have no auth infrastructure.
+  allowPersistentId(): boolean;
   domain(): string;
   subdomain(): string;
   stripePublishableKey(): string;

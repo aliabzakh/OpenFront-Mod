@@ -82,6 +82,9 @@ export abstract class DefaultServerConfig implements ServerConfig {
     this.publicKey = result.data.keys[0];
     return this.publicKey;
   }
+  allowPersistentId(): boolean {
+    return (process.env.ALLOW_PERSISTENT_ID ?? "false").toLowerCase() === "true";
+  }
   otelEnabled(): boolean {
     return (
       this.env() !== GameEnv.Dev &&

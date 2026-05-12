@@ -22,7 +22,7 @@ export async function verifyClientToken(
   config: ServerConfig,
 ): Promise<TokenVerificationResult> {
   if (PersistentIdSchema.safeParse(token).success) {
-    if (config.env() === GameEnv.Dev) {
+    if (config.env() === GameEnv.Dev || config.allowPersistentId()) {
       return { type: "success", persistentId: token, claims: null };
     } else {
       return {
